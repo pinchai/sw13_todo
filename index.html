@@ -2,153 +2,139 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <title>JS</title>
+  <title>Exam Tab Monitoring</title>
+
+  <style>
+
+      body {
+          padding: 20px;
+          font-family: Arial, sans-serif;
+          background-color: #f4f6f8;
+
+          -webkit-user-select: none; /* Safari / Chrome */
+          -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* Old Edge */
+          user-select: none; /* Standard */
+      }
+
+      .box {
+          width: 200px;
+          height: 120px;
+          margin: 15px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background-color: white;
+          border: 2px solid #333;
+          border-radius: 12px;
+      }
+
+      /* hide content */
+      body.hidden {
+          visibility: hidden;
+          pointer-events: none;
+      }
+
+      /* warning overlay */
+      #warning {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.75);
+          color: white;
+          font-size: 22px;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          z-index: 9999;
+      }
+
+      #warning.show {
+          display: flex;
+      }
+  </style>
 </head>
-<style>
-    .box {
-        width: 500px;
-        height: 500px;
-        border-radius: 10px;
-        box-shadow: 1px 11px 22px #CCCC;
-        margin-top: 10px;
-    }
 
-    #todo_list {
-        list-style: none;
-    }
-
-    #todo_list li {
-        padding: 10px;
-        text-transform: capitalize;
-    }
-</style>
 <body>
-<center>
-  <div class="box" id="box">
-    <label>Todo: </label>
-    <input
-      id="todo_input"
-      type="text"
-      placeholder="Enter your todo"
-    >
-    <input type="button" value="Add" id="btn_add">
-    <hr>
-    <ul id="todo_list"></ul>
-  </div>
-</center>
+
+<div class="box"><h3>Coca</h3></div>
+<div class="box"><h3>Sting</h3></div>
+<div class="box"><h3>Coca</h3></div>
+
+<div id="warning">
+  ⚠️ Warning! <br><br>
+  ប្អូនបានដើរចេញពីកន្លែងប្រឡងហើយ"<br>
+  Violations: <span id="count">0</span>
+</div>
+
 <script>
-    let todo_arr = []
-    let todo_list = document.getElementById('todo_list')
-    let btn_add = document.getElementById('btn_add')
-    let todo_input = document.getElementById('todo_input')
-    let status = 'add'
-    let global_index = -1
-    renderTodoList()
+    let violations = 0;
+    let alreadyHidden = false;
 
-    function renderTodoList() {
-        let task_string = ""
-        for (let item of todo_arr) {
-            let task_name = `<strong>${item.id}.</strong><span>${item.task}</span>`
-            let btn_done = `<input type="button" value="✅" onclick="makeItDone(${item.id})">`
-            if (item.isDone) {
-                task_name = `<del>${item.id}.</del><del>${item.task}</del>`
-                btn_done = ""
-            }
+    function addViolation() {
+        violations++;
+        document.getElementById("count").innerText = violations;
+        document.getElementById("warning").classList.add("show");
 
-            task_string += `
-             <li>
-              ${task_name}
-              ${btn_done}
-              <input type="button" value="📝" onclick="getEdit(${item.id})">
-              <input type="button" value="❌" onclick="deleteTask(${item.id})">
-            </li>
-          `
-        }
-        todo_list.innerHTML = task_string
+        setTimeout(() => {
+            document.getElementById("warning").classList.remove("show");
+        }, 5000);
     }
 
-    btn_add.addEventListener('click', function () {
-        let todo_text = todo_input.value
-        if (status === 'add') {
-            todo_arr.push(
-                {
-                    id: todo_arr.length + 1,
-                    task: todo_text,
-                    isDone: false
-                }
-            )
-        } else {
-            //
-            todo_arr[global_index].task = todo_text
+    // 1️⃣ Tab switch / minimize
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            document.body.classList.add("hidden");
+            alreadyHidden = true;
+        } else if (alreadyHidden) {
+            document.body.classList.remove("hidden");
+            addViolation();
+            alreadyHidden = false;
         }
-        renderTodoList()
-        clearForm()
-    })
+    });
 
-    todo_input.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            btn_add.click()
+    // 2️⃣ Mouse leaves browser window
+    document.addEventListener("mouseleave", (e) => {
+        if (e.clientY <= 0 || e.clientX <= 0) {
+            addViolation();
         }
-    })
+    });
 
-    function deleteTask(id) {
-        console.log(id)
-        let index = -1
-        for (let i = 0; i < todo_arr.length; i++) {
-            if (todo_arr[i].id === id) {
-                index = i
-            }
+    // 3️⃣ Window loses focus (Alt+Tab, click outside)
+    window.addEventListener("blur", () => {
+        document.body.classList.add("hidden");
+        alreadyHidden = true;
+    });
+
+    window.addEventListener("focus", () => {
+        if (alreadyHidden) {
+            document.body.classList.remove("hidden");
+            addViolation();
+            alreadyHidden = false;
+        }
+    });
+
+    document.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+    });
+
+    document.addEventListener("dblclick", (e) => {
+        e.preventDefault();
+    });
+
+    document.addEventListener("keydown", function (e) {
+
+        const key = e.key.toLowerCase();
+        console.log(key);
+
+        // -------- DevTools --------
+        if (e.key === "F12") {
+            e.preventDefault();
+            return false;
         }
 
-        Swal.fire({
-            title: "Are you sure?",
-            text: "You won't be able to revert this!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Yes, delete it!"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                todo_arr.splice(index, 1)
-                renderTodoList()
-            }
-        });
-    }
-
-    function getEdit(id) {
-        let index = -1
-        for (let i = 0; i < todo_arr.length; i++) {
-            if (todo_arr[i].id === id) {
-                index = i
-            }
-        }
-        todo_input.value = todo_arr[index].task
-        status = 'edit'
-        btn_add.value = 'Edit'
-        global_index = index
-    }
-
-    function makeItDone(id) {
-        let index = -1
-        for (let i = 0; i < todo_arr.length; i++) {
-            if (todo_arr[i].id === id) {
-                index = i
-            }
-        }
-        todo_input.value = todo_arr[index].isDone = true
-        renderTodoList()
-        console.log(todo_arr)
-    }
-
-    function clearForm() {
-        todo_input.value = ""
-        todo_input.focus()
-        status = 'add'
-        btn_add.value = 'Add'
-        global_index = -1
-    }
+    });
 </script>
+
 </body>
 </html>
